@@ -1,0 +1,76 @@
+# Presets
+presets:
+  - labels:
+      preset-dind-enabled: "true"
+    env:
+    - name: DOCKER_IN_DOCKER_ENABLED
+      value: "true"
+  - labels:
+      preset-docker-credentials: "true"
+    env:
+    - name: DOCKER_USER
+      valueFrom:
+        secretKeyRef:
+          name: docker-creds
+          key: user
+    env:
+    - name: DOCKER_PASS
+      valueFrom:
+        secretKeyRef:
+          name: docker-creds
+          key: password      
+
+# Sinker configurations (for cleanup)
+sinker:
+  resync_period: 1m
+  max_prowjob_age: 4h
+  max_pod_age: 4h
+
+
+# All the Tide configurations
+tide:
+  queries:
+  - orgs:
+    - riteshgupta93
+  - repos:
+    - riteshgupta93/kube
+    labels:
+    - lgtm
+    - approved
+    missingLabels:
+    - do-not-merge
+    - do-not-merge/hold
+    - do-not-merge/work-in-progress
+    - needs-ok-to-test
+    - needs-rebase
+
+deck:
+  spyglass:
+    size_limit: 500000000
+    viewers:
+      "started.json|finished.json":
+      - "metadata"
+      "build-log.txt":
+      - "buildlog"
+      "artifacts/junit.*\\.xml":
+      - "junit"
+  tide_update_period: 1s
+
+plank:
+  job_url_template: 'https://prow.k8s.io/view/gs/kubernetes-jenkins/{{if eq .Spec.Type "presubmit"}}pr-logs/pull{{else if eq .Spec.Type "batch"}}pr-logs/pull{{else}}logs{{end}}{{if .Spec.Refs}}{{if ne .Spec.Refs.Org ""}}{{if ne .Spec.Refs.Org "kubernetes"}}/{{if and (eq .Spec.Refs.Org "kubernetes-sigs") (ne .Spec.Refs.Repo "poseidon")}}sigs.k8s.io{{else}}{{.Spec.Refs.Org}}{{end}}_{{.Spec.Refs.Repo}}{{else if ne .Spec.Refs.Repo "kubernetes"}}/{{.Spec.Refs.Repo}}{{end}}{{end}}{{end}}{{if eq .Spec.Type "presubmit"}}/{{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}{{else if eq .Spec.Type "batch"}}/batch{{end}}/{{.Spec.Job}}/{{.Status.BuildID}}/'
+  report_templates:
+    '*': '[Full PR test history](https://prow.k8s.io/pr-history?org={{.Spec.Refs.Org}}&repo={{.Spec.Refs.Repo}}&pr={{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}). [Your PR dashboard](https://prow.k8s.io/pr?query=is%3Apr%20state%3Aopen%20author%3A{{with index .Spec.Refs.Pulls 0}}{{.Author}}{{end}}). Please help us cut down on flakes by [linking to](https://git.k8s.io/community/contributors/devel/sig-testing/flaky-tests.md#filing-issues-for-flaky-tests) an [open issue](https://github.com/{{.Spec.Refs.Org}}/{{.Spec.Refs.Repo}}/issues?q=is:issue+is:open) when you hit one in your PR.'
+  job_url_prefix_config:
+    '*': https://prow.k8s.io/view/
+  pod_pending_timeout: 15m
+  pod_unscheduled_timeout: 5m
+  allow_cancellations: true # AllowCancellations enables aborting presubmit jobs for commits that have been superseded by newer commits in Github pull requests.
+  max_concurrency: 50 # Limit of concurrent ProwJobs. Need to be adjusted depending of the cluster size.
+  default_decoration_config:
+    timeout: 7200000000000
+    grace_period: 600000000000
+    utility_images:
+      clonerefs: "gcr.io/k8s-prow/clonerefs:v20190312-abfe0e0"
+      initupload: "gcr.io/k8s-prow/initupload:v20190312-abfe0e0"
+      entrypoint: "gcr.io/k8s-prow/entrypoint:v20190312-abfe0e0"
+      sidecar: "gcr.io/k8s-prow/sidecar:v20190312-abfe0e0"

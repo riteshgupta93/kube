@@ -5,6 +5,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  namespace: default
   name: plugins
 data:
   plugins.yaml: ""
@@ -12,17 +13,24 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  namespace: default
   name: config
 data:
-  config.yaml: |
-    periodics:
-    - interval: 10m
-      agent: kubernetes
-      name: echo-test
-      spec:
-        containers:
-        - image: alpine
-          command: ["/bin/date"]
+  config.yaml: ""
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: default
+  name: label-config
+data:
+  lablels.yaml: ""
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: default
+  name: job-config
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -75,7 +83,7 @@ spec:
           - required:
             - completionTime
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hook
@@ -83,6 +91,9 @@ metadata:
     app: hook
 spec:
   replicas: 2
+  selector:
+    matchLabels:
+      app: hook  
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -97,10 +108,11 @@ spec:
       terminationGracePeriodSeconds: 180
       containers:
       - name: hook
-        image: gcr.io/k8s-prow/hook:v20181012-72b0b93
+        image: gcr.io/k8s-prow/hook:v20190405-651ad49e6
         imagePullPolicy: Always
         args:
         - --dry-run=false
+        - --job-config-path=/etc/job-config
         ports:
           - name: http
             containerPort: 8888
@@ -117,19 +129,25 @@ spec:
         - name: plugins
           mountPath: /etc/plugins
           readOnly: true
+        - name: job-config
+          mountPath: /etc/job-config
+          readOnly: true
       volumes:
       - name: hmac
         secret:
-          secretName: hmac-token
+          secretName: hmac
       - name: oauth
         secret:
-          secretName: oauth-token
+          secretName: oauth
       - name: config
         configMap:
           name: config
       - name: plugins
         configMap:
           name: plugins
+      - name: job-config
+        configMap:
+          name: job-config
 ---
 apiVersion: v1
 kind: Service
@@ -142,13 +160,16 @@ spec:
   - port: 8888
   type: NodePort
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: plank
   labels:
     app: plank
 spec:
+  selector:
+    matchLabels:
+      app: plank        
   replicas: 1 # Do not scale up.
   template:
     metadata:
@@ -158,9 +179,10 @@ spec:
       serviceAccountName: "plank"
       containers:
       - name: plank
-        image: gcr.io/k8s-prow/plank:v20181012-72b0b93
+        image: gcr.io/k8s-prow/plank:v20190405-651ad49e6
         args:
         - --dry-run=false
+        - --job-config-path=/etc/job-config
         volumeMounts:
         - name: oauth
           mountPath: /etc/github
@@ -168,21 +190,30 @@ spec:
         - name: config
           mountPath: /etc/config
           readOnly: true
+        - name: job-config
+          mountPath: /etc/job-config
+          readOnly: true
       volumes:
       - name: oauth
         secret:
-          secretName: oauth-token
+          secretName: oauth
       - name: config
         configMap:
           name: config
+      - name: job-config
+        configMap:
+          name: job-config
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sinker
   labels:
     app: sinker
 spec:
+  selector:
+    matchLabels:
+      app: sinker        
   replicas: 1
   template:
     metadata:
@@ -192,17 +223,27 @@ spec:
       serviceAccountName: "sinker"
       containers:
       - name: sinker
-        image: gcr.io/k8s-prow/sinker:v20181012-72b0b93
+        image: gcr.io/k8s-prow/sinker:v20190405-651ad49e6
+        args:
+          - --dry-run=false
+          - --job-config-path=/etc/job-config        
         volumeMounts:
         - name: config
           mountPath: /etc/config
+          readOnly: true
+        - name: job-config
+          mountPath: /etc/job-config
           readOnly: true
       volumes:
       - name: config
         configMap:
           name: config
+      - name: job-config
+        configMap:
+          name: job-config
+
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: deck
@@ -210,6 +251,9 @@ metadata:
     app: deck
 spec:
   replicas: 2
+  selector:
+    matchLabels:
+      app: deck  
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -224,9 +268,12 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
       - name: deck
-        image: gcr.io/k8s-prow/deck:v20181012-72b0b93
+        image: gcr.io/k8s-prow/deck:v20190405-651ad49e6
         args:
-        - --hook-url=http://hook:8888/plugin-help
+          - --tide-url=http://tide/
+          - --hook-url=http://hook:8888/plugin-help
+          - --job-config-path=/etc/job-config
+          - --spyglass=true
         ports:
           - name: http
             containerPort: 8080
@@ -234,10 +281,16 @@ spec:
         - name: config
           mountPath: /etc/config
           readOnly: true
+        - name: job-config
+          mountPath: /etc/job-config
+          readOnly: true
       volumes:
       - name: config
         configMap:
           name: config
+      - name: job-config
+        configMap:
+          name: job-config
 ---
 apiVersion: v1
 kind: Service
@@ -251,7 +304,7 @@ spec:
     targetPort: 8080
   type: NodePort
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: horologium
@@ -259,6 +312,9 @@ metadata:
     app: horologium
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: horologium  
   template:
     metadata:
       labels:
@@ -268,17 +324,26 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
       - name: horologium
-        image: gcr.io/k8s-prow/horologium:v20181012-72b0b93
+        image: gcr.io/k8s-prow/horologium:v20190405-651ad49e6
+        args:
+          - --job-config-path=/etc/job-config
+          - --dry-run=false
         volumeMounts:
         - name: config
           mountPath: /etc/config
+          readOnly: true
+        - name: job-config
+          mountPath: /etc/job-config
           readOnly: true
       volumes:
       - name: config
         configMap:
           name: config
+      - name: job-config
+        configMap:
+          name: job-config
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tide
@@ -286,6 +351,9 @@ metadata:
     app: tide
 spec:
   replicas: 1 # Do not scale up.
+  selector:
+    matchLabels:
+      app: tide  
   template:
     metadata:
       labels:
@@ -294,9 +362,10 @@ spec:
       serviceAccountName: "tide"
       containers:
       - name: tide
-        image: gcr.io/k8s-prow/tide:v20181012-72b0b93
+        image: gcr.io/k8s-prow/tide:v20190405-651ad49e6
         args:
         - --dry-run=false
+        - --job-config-path=/etc/job-config
         ports:
           - name: http
             containerPort: 8888
@@ -307,13 +376,19 @@ spec:
         - name: config
           mountPath: /etc/config
           readOnly: true
+        - name: job-config
+          mountPath: /etc/job-config
+          readOnly: true
       volumes:
       - name: oauth
         secret:
-          secretName: oauth-token
+          secretName: oauth
       - name: config
         configMap:
           name: config
+      - name: job-config
+        configMap:
+          name: job-config
 ---
 apiVersion: v1
 kind: Service
@@ -551,3 +626,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: "tide"
+
