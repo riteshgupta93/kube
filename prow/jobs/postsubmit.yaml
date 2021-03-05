@@ -1,0 +1,14 @@
+postsubmits:
+  riteshgupta93/kube:
+  - name: test-commit-job         # As for periodics.
+    decorate: true        # As for periodics.
+    spec:
+      containers:
+      - image: alpine
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/date"]
+    max_concurrency: 10   # Run no more than this number concurrently.
+    branches:             # Regexps, only run against these branches.
+    - ^prow$
+    skip_branches:        # Regexps, do not run against these branches.
+    - ^release-.*$
