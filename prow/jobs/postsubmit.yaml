@@ -1,7 +1,7 @@
 postsubmits:
   riteshgupta93/kube:
   - name: test-commit-job         # As for periodics.
-    decorate: true        # As for periodics.
+    decorate: false
     spec:
       containers:
       - image: alpine
