@@ -1,0 +1,33 @@
+artifactory:
+  masterKeySecretName: "my-masterkey-secret"
+  joinKeySecretName: "my-joinkey-secret"      
+  license:
+    secret: "artifactory-cluster-license"
+    dataKey: "artifactory.lic"
+  admin:
+    ip: "*" # Example: "*" to allow access from anywhere
+    username: "admin"
+    password: "Admin@123"      
+  primary:
+    resources:
+      requests:
+        memory: "4Gi"
+        cpu: "2"
+      limits:
+        memory: "6Gi"
+        cpu: "4"
+    javaOpts:
+      xms: "4g"
+      xmx: "4g"
+  node:
+    replicaCount: 1
+    resources:
+      requests:
+        memory: "4Gi"
+        cpu: "2"
+      limits:
+        memory: "6Gi"
+        cpu: "4"
+    javaOpts:
+      xms: "4g"
+      xmx: "4g"
