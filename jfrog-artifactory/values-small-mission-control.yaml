@@ -1,0 +1,117 @@
+initContainers:
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "10m"
+    limits:
+      memory: "128Mi"
+      cpu: "250m"
+elasticsearch:
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "1"
+  ## ElasticSearch xms and xmx should be same!
+  javaOpts:
+    xms: "3g"
+    xmx: "3g"
+
+
+router:
+  name: router
+  image:
+    registry: releases-docker.jfrog.io
+    repository: jfrog/router
+    tag: 7.17.2
+    imagePullPolicy: IfNotPresent
+  internalPort: 8082
+  externalPort: 8082
+  tlsEnabled: false
+  livenessProbe:
+    enabled: false
+    config: |
+      httpGet:
+        path: /router/api/v1/system/health
+        scheme: {{ include "mission-control.scheme" . | upper }}
+        port: {{ .Values.router.internalPort }}
+      initialDelaySeconds: 0
+      periodSeconds: 10
+      timeoutSeconds: 10
+      failureThreshold: 3
+      successThreshold: 1
+  readinessProbe:
+    enabled: false
+    config: |
+      httpGet:
+        path: /router/api/v1/system/health
+        scheme: {{ include "mission-control.scheme" . | upper }}
+        port: {{ .Values.router.internalPort }}
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 10
+      failureThreshold: 10
+      successThreshold: 1
+  startupProbe:
+    enabled: false
+    config: |
+      httpGet:
+        path: /router/api/v1/system/health
+        scheme: {{ include "mission-control.scheme" . | upper }}
+        port: {{ .Values.router.internalPort }}
+      initialDelaySeconds: 30
+      failureThreshold: 60
+      periodSeconds: 5
+      timeoutSeconds: 1
+  persistence:
+    accessMode: ReadWriteOnce
+    mountPath: "/var/opt/jfrog/router"
+    size: 2Gi        
+  resources: 
+    requests:
+      memory: "1Gi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "1"
+
+missionControl:
+  joinKeySecretName: my-joinkey-secret 
+  masterKeySecretName: my-masterkey-secret        
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "500m"
+    limits:
+      memory: "4Gi"
+      cpu: "1"
+  javaOpts:
+    xms: "2g"
+    xmx: "4g"
+
+insightServer:
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+insightScheduler:
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+  javaOpts:
+    xms: "512m"
+    xmx: "2g"
+
+systemYamlOverride:
+  existingSecret: systemyaml 
+  dataKey: sys.yaml

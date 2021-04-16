@@ -28,10 +28,14 @@ POSTGRES_PASSWORD="PosTgRes@1to3"
 kubectl create secret generic postgres-secret -n ${namespace} --from-literal=password=${POSTGRES_PASSWORD}
 echo Postgres Password: ${POSTGRES_PASSWORD}
 
+ADMIN_DATA="admin@*=Admin@1234"
+kubectl create secret generic admin-secret -n ${namespace} --from-literal=password=${ADMIN_DATA}
+echo ADMIN Password: ${ADMIN_PASSWORD}
 
 kubectl create secret generic artifactory-cluster-license -n ${namespace} --from-file=./artifactory.lic
 echo Cluster License secret created from file ./artifactory.lic
 
+kubectl create secret generic systemyaml -n ${namespace} --from-file ./sys.yaml
 #--set postgresql.postgresqlPassword=${POSTGRES_PASSWORD}
 #--set artifactory.masterKeySecretName=my-masterkey-secret
 #--set artifactory.joinKeySecretName=my-joinkey-secret

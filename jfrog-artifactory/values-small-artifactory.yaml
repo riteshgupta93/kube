@@ -6,8 +6,8 @@ artifactory:
     dataKey: "artifactory.lic"
   admin:
     ip: "*" # Example: "*" to allow access from anywhere
-    username: "admin"
-    password: "Admin@123"  
+    secret: "admin-secret"
+    dataKey: "password"
   resources:
     requests:
       memory: "4Gi"
@@ -18,3 +18,27 @@ artifactory:
   javaOpts:
     xms: "4g"
     xmx: "4g"
+
+ingress:
+  enabled: true
+  defaultBackend:
+    enabled: true
+  # Used to create an Ingress record.
+  hosts: ["jfrog.artifactory.local"]
+  routerPath: /
+  artifactoryPath: /artifactory/
+  annotations: {}
+  # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
+  # nginx.ingress.kubernetes.io/proxy-body-size: "0"
+  labels: {}
+  # traffic-type: external
+  # traffic-type: internal
+  tls: []
+  # Secrets must be manually created in the namespace.
+  # - secretName: chart-example-tls
+  #   hosts:
+  #     - artifactory.domain.example
+
+  # Additional ingress rules
+  additionalRules: []    

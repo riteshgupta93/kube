@@ -1,0 +1,39 @@
+shared:
+  logging:
+    consoleLog:
+      enabled: false
+  jfrogUrl: "http://jfrog.artifactory.local"
+  elasticsearch:
+    username: admin
+    password: admin
+  database:
+    type: postgresql
+    driver: org.postgresql.Driver
+    url: jdbc:postgresql://mission-control-postgresql:5432/mission_control?sslmode=disable
+  
+
+mc:
+  database:
+    username: mc
+    schema: jfmc_server
+  extraJavaOpts: >
+    -Xms2g
+    -Xmx4g
+
+insight-scheduler:
+  database:
+    username: mc
+    schema: insight_scheduler
+  extraJavaOpts: >
+    -Xms512m
+    -Xmx2g
+
+insight-server:
+  database:
+    username: mc
+    schema: insight_server
+  clients:
+    elasticsearch:
+      connectionWaitTimeoutSecs: 180
+      searchguard:
+        connectionWaitTimeoutSecs: 1800
