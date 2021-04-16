@@ -1,13 +1,13 @@
 artifactory:
-  masterKeySecretName: "my-masterkey-secret"
-  joinKeySecretName: "my-joinkey-secret"
+  masterKeySecretName: "ARTIFACTORY_MASTER_KEY_SECRET"
+  joinKeySecretName: "ARTIFACTORY_JOIN_KEY_SECRET"
   license:
-    secret: "artifactory-cluster-license"
-    dataKey: "artifactory.lic"
+    secret: "ARTIFACTORY_LICENSE_SECRET"
+    dataKey: "ARTIFACTORY_LICENSE_KEY"
   admin:
     ip: "*" # Example: "*" to allow access from anywhere
-    secret: "admin-secret"
-    dataKey: "password"
+    secret: "ARTIFACTORY_ADMIN_SECRET"
+    dataKey: "ARTIFACTORY_ADMIN_KEY"
   resources:
     requests:
       memory: "4Gi"
@@ -19,12 +19,28 @@ artifactory:
     xms: "4g"
     xmx: "4g"
 
+postgresql:
+  enabled: false
+database:
+  type: "postgresql"
+  driver: "org.postgresql.Driver"
+  secrets:
+    user:
+      name: "ARTIFACTORY_DB_SECRET"
+      key: "ARTIFACTORY_DB_USER_KEY"
+    password:
+      name: "ARTIFACTORY_DB_SECRET"
+      key: "ARTIFACTORY_DB_PASSWORD_KEY"
+    url:
+      name: "ARTIFACTORY_DB_SECRET"
+      key: "ARTIFACTORY_DB_URL_KEY"
+
 ingress:
   enabled: true
   defaultBackend:
     enabled: true
   # Used to create an Ingress record.
-  hosts: ["jfrog.artifactory.local"]
+  hosts: ["ARTIFACTORY_INGRESS_HOST"]
   routerPath: /
   artifactoryPath: /artifactory/
   annotations: {}

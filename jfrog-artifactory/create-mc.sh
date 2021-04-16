@@ -1,15 +1,14 @@
 #!/bin/bash
 
 NAMESPACE=artifactory
-POSTGRES_PASSWORD="$(kubectl get secret postgres-secret -n ${NAMESPACE} -o jsonpath="{..data.password}" | base64 --decode)"
+MC_MASTER_KEY_SECRET=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_MASTER_KEY_SECRET}')
+MC_JOIN_KEY_SECRET=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_JOIN_KEY_SECRET}')
+JFROG_ROUTER_URL="http://$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_INGRESS_HOST}')"
 
-#jfrogUrl="$(kubectl get svc --namespace ${NAMESPACE} artifactory-artifactory-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+cp ./values/values-small-mission-control.yaml.template ./values/values-small-mission-control.yaml
 
-jfrogUrl="http://192.168.49.2:$(kubectl get svc --namespace ${NAMESPACE} artifactory-artifactory-nginx -o jsonpath='{.spec.ports[0].nodePort}')"
+sed -i -e "s|MC_MASTER_KEY_SECRET|$MC_MASTER_KEY_SECRET|g" \
+       -e "s|MC_JOIN_KEY_SECRET|$MC_JOIN_KEY_SECRET|g" \
+       -e "s|JFROG_ROUTER_URL|$JFROG_ROUTER_URL|g" ./values/values-small-mission-control.yaml
 
-echo $jfrogUrl
-
-helm upgrade --install mission-control --set postgresql.postgresqlPassword=${POSTGRES_PASSWORD} --namespace artifactory -f ./values-small-mission-control.yaml jfrog/mission-control
-
-#helm upgrade --install mission-control --set missionControl.joinKeySecretName=my-joinkey-secret --set missionControl.jfrogUrl="http://192.168.49.2:32174" --namespace artifactory -f ./values-small-mission-control.yaml jfrog/mission-control
-
+helm upgrade --install mission-control  --namespace ${NAMESPACE} -f ./values/values-small-mission-control.yaml jfrog/mission-control

@@ -1,13 +1,31 @@
 #!/bin/bash
 
 NAMESPACE=artifactory
-POSTGRES_PASSWORD="$(kubectl get secret postgres-secret -n ${NAMESPACE} -o jsonpath="{..data.password}" | base64 --decode)"
-ADMIN_PASSWORD="$(kubectl get secret admin-secret -n ${NAMESPACE} -o jsonpath="{..data.password}" | base64 --decode)"
+ARTIFACTORY_MASTER_KEY_SECRET=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_MASTER_KEY_SECRET}')
+ARTIFACTORY_JOIN_KEY_SECRET=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_JOIN_KEY_SECRET}')
+ARTIFACTORY_LICENSE_SECRET=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_LICENSE_SECRET}')
+ARTIFACTORY_LICENSE_KEY=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_LICENSE_KEY}')
+ARTIFACTORY_ADMIN_SECRET=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_ADMIN_SECRET}')
+ARTIFACTORY_ADMIN_KEY=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_ADMIN_KEY}')
+ARTIFACTORY_DB_SECRET=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_DB_SECRET}')
+ARTIFACTORY_DB_USER_KEY=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_DB_USER_KEY}')
+ARTIFACTORY_DB_PASSWORD_KEY=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_DB_PASSWORD_KEY}')
+ARTIFACTORY_DB_URL_KEY=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_DB_URL_KEY}')
+ARTIFACTORY_INGRESS_HOST=$(kubectl get configmap jfrog-configmap -o jsonpath='{.data.ARTIFACTORY_INGRESS_HOST}')
 
-#helm upgrade --install artifactory --set artifactory.masterKeySecretName=my-masterkey-secret --set artifactory.joinKeySecretName=my-joinkey-secret --set postgresql.postgresqlPassword=${POSTGRES_PASSWORD} --namespace ${NAMESPACE} jfrog/artifactory
+cp ./values/values-small-artifactory.yaml.template ./values/values-small-artifactory.yaml
 
-#helm upgrade --install artifactory --set postgresql.postgresqlPassword=${POSTGRES_PASSWORD} --namespace ${NAMESPACE} -f ./values-small-artifactory-ha.yaml jfrog/artifactory-ha
+sed -i -e "s|ARTIFACTORY_MASTER_KEY_SECRET|$ARTIFACTORY_MASTER_KEY_SECRET|g" \
+       -e "s|ARTIFACTORY_JOIN_KEY_SECRET|$ARTIFACTORY_JOIN_KEY_SECRET|g" \
+       -e "s|ARTIFACTORY_LICENSE_SECRET|$ARTIFACTORY_LICENSE_SECRET|g" \
+       -e "s|ARTIFACTORY_LICENSE_KEY|$ARTIFACTORY_LICENSE_KEY|g" \
+       -e "s|ARTIFACTORY_ADMIN_SECRET|$ARTIFACTORY_ADMIN_SECRET|g" \
+       -e "s|ARTIFACTORY_ADMIN_KEY|$ARTIFACTORY_ADMIN_KEY|g" \
+       -e "s|ARTIFACTORY_DB_SECRET|$ARTIFACTORY_DB_SECRET|g" \
+       -e "s|ARTIFACTORY_DB_USER_KEY|$ARTIFACTORY_DB_USER_KEY|g" \
+       -e "s|ARTIFACTORY_DB_PASSWORD_KEY|$ARTIFACTORY_DB_PASSWORD_KEY|g" \
+       -e "s|ARTIFACTORY_DB_URL_KEY|$ARTIFACTORY_DB_URL_KEY|g" \
+       -e "s|ARTIFACTORY_INGRESS_HOST|$ARTIFACTORY_INGRESS_HOST|g" ./values/values-small-artifactory.yaml
 
-helm upgrade --install artifactory --set postgresql.postgresqlPassword=${POSTGRES_PASSWORD}  --namespace ${NAMESPACE} -f ./values-small-artifactory.yaml jfrog/artifactory
 
-
+helm upgrade --install artifactory --namespace ${NAMESPACE} -f ./values/values-small-artifactory.yaml jfrog/artifactory

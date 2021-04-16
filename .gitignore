@@ -1,2 +1,3 @@
 jfrog-artifactory/*.lic
 jfrog-artifactory/config_keys
+jfrog-artifactory/values/*.yaml
