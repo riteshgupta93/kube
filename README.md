@@ -1,1 +1,1 @@
-# Kubenetes CICD with PROW hook
+# CI with PROW
