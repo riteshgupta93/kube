@@ -1,1 +1,1 @@
-# Kubenetes CICD with PROW
+# CI with PROW
